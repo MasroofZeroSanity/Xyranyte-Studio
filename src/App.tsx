@@ -6,7 +6,7 @@ import NotFoundPage from '@/pages/not-found/NotFoundPage';
 export default function App() {
   console.log("note")
   return (
-    <HashRouter base="/Xyranyte-Studio">
+    <HashRouter>
       <Route path="/" component={LandingPage} />
       <Route path="/studio" component={StudioPage} />
       <Route path="*" component={NotFoundPage} />
