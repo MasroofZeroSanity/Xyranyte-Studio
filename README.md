@@ -1,4 +1,4 @@
-# Anchor Text Studio
+# Xyranyte Studio
 
 ![Studio preview](public/images/6264630433593102859.jpg)
 
