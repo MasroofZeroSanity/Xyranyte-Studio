@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router';
-import { createEffect, createSignal, onCleanup } from 'solid-js';
+import NavigationBar from '@/components/ui/NavigationBar';
 import './landing.css';
 
 const workflow = [
@@ -30,64 +30,15 @@ const workflow = [
 ];
 
 export default function LandingPage() {
-  const [darkMode, setDarkMode] = createSignal(localStorage.getItem('anchor-text-theme') === 'dark');
-
-  createEffect(() => {
-    const enabled = darkMode();
-    document.documentElement.classList.toggle('dark', enabled);
-    localStorage.setItem('anchor-text-theme', enabled ? 'dark' : 'light');
-  });
-
-  onCleanup(() => document.documentElement.classList.remove('dark'));
-
   return (
     <div class="landing-shell">
       <a class="skip-link" href="#main">Skip to content</a>
 
-      <header class="site-nav">
-        <div class="container site-nav__inner">
-          <A class="wordmark" href="/" aria-label="Xyranyte Studio home">
-            Xyranyte <span>Studio</span>
-          </A>
-          <nav class="site-nav__links" aria-label="Main navigation">
-            <a href="#workflow">The workflow</a>
-            <a href="#controls">Text controls</a>
-            <A class="nav-action" href="/studio">Open the Studio</A>
-            <button
-              type="button"
-              role="switch"
-              aria-label="Toggle dark mode"
-              aria-checked={darkMode()}
-              title={darkMode() ? 'Dark mode' : 'Light mode'}
-              onClick={() => setDarkMode((enabled) => !enabled)}
-              class="theme-toggle relative flex h-8 w-16 items-center rounded-full border border-line bg-paper p-[3px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              <span
-                aria-hidden="true"
-                class="absolute left-[3px] top-[3px] h-6 w-7 rounded-full bg-white shadow-sm transition-transform"
-                style={{ transform: darkMode() ? 'translateX(28px)' : 'translateX(0)' }}
-              />
-              <span
-                class="relative z-10 flex h-6 w-7 items-center justify-center"
-                classList={{ 'text-accent': !darkMode(), 'text-ink/50': darkMode() }}
-              >
-                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                  <circle cx="12" cy="12" r="4" />
-                  <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
-                </svg>
-              </span>
-              <span
-                class="relative z-10 flex h-6 w-7 items-center justify-center"
-                classList={{ 'text-accent': darkMode(), 'text-ink/50': !darkMode() }}
-              >
-                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z" />
-                </svg>
-              </span>
-            </button>
-          </nav>
-        </div>
-      </header>
+      <NavigationBar>
+        <a href="#workflow">The workflow</a>
+        <a href="#controls">Text controls</a>
+        <A class="app-navbar__action" href="/studio">Open the Studio</A>
+      </NavigationBar>
 
       <main id="main">
         <section class="hero" aria-labelledby="hero-title">
