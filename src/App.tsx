@@ -4,6 +4,7 @@ import StudioPage from '@/pages/studio/StudioPage';
 import NotFoundPage from '@/pages/not-found/NotFoundPage';
 
 export default function App() {
+  console.log("note")
   return (
     <Router>
       <Route path="/" component={LandingPage} />
