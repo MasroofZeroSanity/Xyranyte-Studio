@@ -42,6 +42,14 @@ export default function LandingPage() {
 
       <main id="main">
         <section class="hero" aria-labelledby="hero-title">
+          <svg class="hero__texture" aria-hidden="true">
+            <defs>
+              <pattern id="hero-plus-pattern" width="28" height="28" patternUnits="userSpaceOnUse">
+                <path d="M14 10v8M10 14h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#hero-plus-pattern)" />
+          </svg>
           <div class="container hero__grid">
             <div class="hero__copy">
               <h1 id="hero-title">Place once<br />Print Everything</h1>

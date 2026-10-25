@@ -8,7 +8,7 @@ interface NavigationBarProps {
 }
 
 export default function NavigationBar(props: NavigationBarProps) {
-  const [darkMode, setDarkMode] = createSignal(localStorage.getItem('anchor-text-theme') === 'dark');
+  const [darkMode, setDarkMode] = createSignal(localStorage.getItem('anchor-text-theme') !== 'light');
 
   createEffect(() => {
     const enabled = darkMode();
