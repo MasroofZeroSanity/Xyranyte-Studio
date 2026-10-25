@@ -1,4 +1,4 @@
-import { Route, Router } from '@solidjs/router';
+import { Route, HashRouter } from '@solidjs/router';
 import LandingPage from '@/pages/landing/LandingPage';
 import StudioPage from '@/pages/studio/StudioPage';
 import NotFoundPage from '@/pages/not-found/NotFoundPage';
@@ -6,10 +6,10 @@ import NotFoundPage from '@/pages/not-found/NotFoundPage';
 export default function App() {
   console.log("note")
   return (
-    <Router>
+    <HashRouter base="/Xyranyte-Studio">
       <Route path="/" component={LandingPage} />
       <Route path="/studio" component={StudioPage} />
       <Route path="*" component={NotFoundPage} />
-    </Router>
+    </HashRouter>
   );
 }

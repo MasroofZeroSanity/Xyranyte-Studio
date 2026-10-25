@@ -5,8 +5,13 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   plugins: [solid(), tailwindcss()],
-  base: './',
+  base: '/Xyranyte-Studio/', // Correctly maps assets to your repository path
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: { 
+      '@': fileURLToPath(new URL('./src', import.meta.url)) 
+    },
+  },
+  build: {
+    target: 'esnext', // Optimizes modern JavaScript builds for SolidJS reactivity
   },
 });
