@@ -63,7 +63,7 @@ export default function LandingPage() {
 
             <figure class="hero-product">
               <img
-                src="/images/6264630433593102859.jpg"
+                src="images/6264630433593102859.jpg"
                 width="1480"
                 height="740"
                 fetchpriority="high"
