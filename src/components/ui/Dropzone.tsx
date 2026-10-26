@@ -33,10 +33,10 @@ export default function Dropzone(props: Props) {
         setOver(false);
         pick(e.dataTransfer?.files);
       }}
-      class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      class="flex cursor-pointer flex-col items-center justify-center border-2 border-dashed text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       classList={{
         'border-accent bg-accent-soft': over(),
-        'border-line bg-white hover:border-accent/60': !over(),
+        'border-ink-rule bg-white hover:border-accent': !over(),
         'px-4 py-2': props.compact,
         'px-6 py-20': !props.compact,
       }}

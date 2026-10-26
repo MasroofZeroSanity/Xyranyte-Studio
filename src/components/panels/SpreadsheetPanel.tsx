@@ -42,7 +42,7 @@ export default function SpreadsheetPanel() {
         </p>
         <div class="mt-2 flex items-center gap-2">
           <button
-            class="rounded-md border border-line bg-white px-2 py-1 text-sm disabled:opacity-40"
+            class="border-2 border-ink bg-white px-2 py-1 text-sm hover:bg-paper-2 disabled:opacity-40"
             disabled={editor.previewIndex() === 0}
             onClick={() => step(-1)}
           >
@@ -52,7 +52,7 @@ export default function SpreadsheetPanel() {
             Previewing row {editor.previewIndex() + 1}
           </span>
           <button
-            class="rounded-md border border-line bg-white px-2 py-1 text-sm disabled:opacity-40"
+            class="border-2 border-ink bg-white px-2 py-1 text-sm hover:bg-paper-2 disabled:opacity-40"
             disabled={editor.previewIndex() === last()}
             onClick={() => step(1)}
           >

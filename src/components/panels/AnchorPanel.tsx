@@ -57,10 +57,10 @@ export default function AnchorPanel() {
             {(a, i) => (
               <li>
                 <button
-                  class="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm"
+                  class="flex w-full items-center justify-between border-l-2 px-2 py-1.5 text-left text-sm"
                   classList={{
-                    'bg-accent-soft font-medium': editor.selectedId() === a.id,
-                    'hover:bg-paper': editor.selectedId() !== a.id,
+                    'border-accent-2 bg-paper-2 font-bold': editor.selectedId() === a.id,
+                    'border-transparent hover:border-ink hover:bg-paper-2': editor.selectedId() !== a.id,
                   }}
                   onClick={() => editor.setSelectedId(a.id)}
                 >
@@ -76,10 +76,23 @@ export default function AnchorPanel() {
       <Show when={editor.selected()}>
         {(sel) => {
           const a = sel;
+          let fontPicker!: HTMLDetailsElement;
           const set = (patch: Parameters<typeof editor.updateAnchor>[1]) =>
             editor.updateAnchor(a().id, patch);
+          const chooseFont = (fontFamily: string, font?: FontsourceFont) => {
+            fontPicker.open = false;
+            setFontSearch('');
+            if (font) {
+              const anchorId = a().id;
+              void selectFont(font, (loadedFont) =>
+                editor.updateAnchor(anchorId, { fontFamily: loadedFont }),
+              );
+            } else {
+              set({ fontFamily });
+            }
+          };
           return (
-            <div class="space-y-3 rounded-lg border border-line bg-white p-3">
+            <div class="space-y-3 border-2 border-ink bg-white p-3">
               <Field label="Spreadsheet column">
                 <Show
                   when={editor.columns().length}
@@ -142,45 +155,68 @@ export default function AnchorPanel() {
                 </Field>
               </div>
 
-              <Field label="Font">
-                <div class="space-y-2">
-                  <input
-                    type="search"
-                    class={inputClass}
-                    value={fontSearch()}
-                    placeholder="Search Fontsource fonts"
-                    onInput={(e) => setFontSearch(e.currentTarget.value)}
-                  />
-                  <select
-                    class={inputClass}
-                    value={a().fontFamily}
-                    disabled={!fontCatalog() || filteredFonts().length === 0}
-                    onChange={(e) => {
-                      const font = fontCatalog()?.find((item) => item.family === e.currentTarget.value);
-                      if (font) {
-                        const anchorId = a().id;
-                        void selectFont(font, (fontFamily) =>
-                          editor.updateAnchor(anchorId, { fontFamily }),
-                        );
-                      }
-                    }}
-                  >
-                    <option value="Georgia">Georgia (system)</option>
-                    <For each={filteredFonts()}>
-                      {(font) => <option value={font.family}>{font.family}</option>}
-                    </For>
-                  </select>
-                  <Show when={fontCatalog.loading}>
-                    <p class="text-xs text-ink/60">Loading font catalog...</p>
-                  </Show>
-                  <Show when={fontCatalog.error}>
-                    <p class="text-xs text-red-600">Font catalog unavailable.</p>
-                  </Show>
-                  <Show when={fontStatus()}>
-                    <p class="text-xs text-ink/60">{fontStatus()}</p>
-                  </Show>
-                </div>
-              </Field>
+              <div class="block">
+                <span class="mb-1 block text-xs font-medium text-ink/70">Font</span>
+                <details
+                  ref={fontPicker}
+                  class="relative"
+                  onToggle={(e) => e.currentTarget.open && setFontSearch('')}
+                >
+                  <summary class="flex min-h-9 cursor-pointer list-none items-center justify-between gap-2 border-2 border-ink bg-white px-2 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-accent">
+                    <span class="truncate">{a().fontFamily}</span>
+                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="m3 6 5 5 5-5" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
+                  </summary>
+                  <div class="absolute inset-x-0 top-full z-30 mt-1 border-2 border-ink bg-white p-2 shadow-[4px_4px_0_var(--color-ink)]">
+                    <input
+                      type="search"
+                      class={inputClass}
+                      value={fontSearch()}
+                      placeholder="Search fonts"
+                      aria-label="Search fonts"
+                      onInput={(e) => setFontSearch(e.currentTarget.value)}
+                    />
+                    <Show when={fontCatalog.loading}>
+                      <p class="px-1 py-2 text-xs text-ink/60">Loading font catalog...</p>
+                    </Show>
+                    <Show when={fontCatalog.error}>
+                      <p class="px-1 py-2 text-xs text-red-600">Font catalog unavailable.</p>
+                    </Show>
+                    <div class="mt-2 max-h-48 overflow-y-auto" role="listbox" aria-label="Fonts">
+                      <Show when={'georgia'.includes(fontSearch().trim().toLowerCase())}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={a().fontFamily === 'Georgia'}
+                          class="flex w-full items-center px-2 py-1.5 text-left text-sm hover:bg-paper-2"
+                          classList={{ 'bg-paper-2 font-bold': a().fontFamily === 'Georgia' }}
+                          onClick={() => chooseFont('Georgia')}
+                        >
+                          Georgia (system)
+                        </button>
+                      </Show>
+                      <For each={filteredFonts()}>
+                        {(font) => (
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={a().fontFamily === font.family}
+                            class="flex w-full items-center px-2 py-1.5 text-left text-sm hover:bg-paper-2"
+                            classList={{ 'bg-paper-2 font-bold': a().fontFamily === font.family }}
+                            onClick={() => chooseFont(font.family, font)}
+                          >
+                            {font.family}
+                          </button>
+                        )}
+                      </For>
+                    </div>
+                    <Show when={fontStatus()}>
+                      <p class="px-1 pt-2 text-xs text-ink/60">{fontStatus()}</p>
+                    </Show>
+                  </div>
+                </details>
+              </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <Field label="Align on anchor">
@@ -219,7 +255,7 @@ export default function AnchorPanel() {
                     type="color"
                     value={a().color}
                     onInput={(e) => set({ color: e.currentTarget.value })}
-                    class="h-7 w-10 cursor-pointer rounded border border-line"
+                    class="h-7 w-10 cursor-pointer border-2 border-ink"
                   />
                 </label>
                 <label class="flex items-center gap-1.5 text-xs">
@@ -239,7 +275,7 @@ export default function AnchorPanel() {
                   Shadow
                 </label>
                 <button
-                  class="rounded-md px-2 py-1 text-sm text-red-600 hover:bg-red-50"
+                  class="border-2 border-transparent px-2 py-1 text-sm text-red-600 hover:border-red-600 hover:bg-red-50"
                   onClick={() => editor.removeAnchor(a().id)}
                 >
                   Delete anchor
@@ -253,7 +289,7 @@ export default function AnchorPanel() {
                       type="color"
                       value={a().shadowColor}
                       onInput={(e) => set({ shadowColor: e.currentTarget.value })}
-                      class="h-8 w-full cursor-pointer rounded border border-line"
+                      class="h-8 w-full cursor-pointer border-2 border-ink"
                     />
                   </Field>
                   <Field label="Blur (px)">

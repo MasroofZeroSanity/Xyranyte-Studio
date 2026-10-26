@@ -1,12 +1,16 @@
-import { createEffect } from 'solid-js';
+import { createEffect, createSignal } from 'solid-js';
 import { editor } from '@/store/editor';
 import { getAnchorBounds, renderScene } from '@/lib/render';
 
 export default function CanvasStage() {
   let canvas!: HTMLCanvasElement;
+  const [zoom, setZoom] = createSignal(1);
+  const [pan, setPan] = createSignal({ x: 0, y: 0 });
+  const [panMode, setPanMode] = createSignal(false);
   let drag:
     | { id: string; mode: 'move'; pointerX: number; pointerY: number; anchorX: number; anchorY: number }
     | { id: string; mode: 'resize'; startX: number; startWidth: number }
+    | { mode: 'pan'; pointerX: number; pointerY: number; panX: number; panY: number }
     | null = null;
 
   createEffect(() => {
@@ -47,7 +51,7 @@ export default function CanvasStage() {
   const resizeHandleHit = (p: { x: number; y: number }) => {
     const selected = editor.selected();
     if (!selected) return false;
-    const threshold = (16 * canvas.width) / canvas.clientWidth;
+    const threshold = (16 * canvas.width) / canvas.getBoundingClientRect().width;
     const ctx = canvas.getContext('2d');
     if (!ctx) return false;
     const bounds = getAnchorBounds(ctx, selected, editor.currentRow());
@@ -56,6 +60,19 @@ export default function CanvasStage() {
   };
 
   const onDown = (e: PointerEvent) => {
+    if (panMode() || e.button === 1) {
+      drag = {
+        mode: 'pan',
+        pointerX: e.clientX,
+        pointerY: e.clientY,
+        panX: pan().x,
+        panY: pan().y,
+      };
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+
     const p = toImagePoint(e);
     if (resizeHandleHit(p)) {
       const selected = editor.selected()!;
@@ -84,6 +101,14 @@ export default function CanvasStage() {
   };
 
   const onMove = (e: PointerEvent) => {
+    if (drag?.mode === 'pan') {
+      setPan({
+        x: drag.panX + e.clientX - drag.pointerX,
+        y: drag.panY + e.clientY - drag.pointerY,
+      });
+      return;
+    }
+
     const p = toImagePoint(e);
     if (drag) {
       if (drag.mode === 'move') {
@@ -91,11 +116,12 @@ export default function CanvasStage() {
           x: Math.round(drag.anchorX + p.x - drag.pointerX),
           y: Math.round(drag.anchorY + p.y - drag.pointerY),
         });
-      } else {
-        const anchor = editor.anchors.find((a) => a.id === drag?.id);
+      } else if (drag.mode === 'resize') {
+        const resize = drag;
+        const anchor = editor.anchors.find((a) => a.id === resize.id);
         const direction = anchor?.align === 'right' ? -1 : anchor?.align === 'center' ? 2 : 1;
-        const maxWidth = Math.max(1, Math.round(drag.startWidth + (p.x - drag.startX) * direction));
-        editor.updateAnchor(drag.id, { maxWidth });
+        const maxWidth = Math.max(1, Math.round(resize.startWidth + (p.x - resize.startX) * direction));
+        editor.updateAnchor(resize.id, { maxWidth });
       }
     } else {
       canvas.style.cursor = resizeHandleHit(p)
@@ -112,14 +138,79 @@ export default function CanvasStage() {
     drag = null;
   };
 
+  const zoomTo = (next: number, clientX?: number, clientY?: number) => {
+    const previous = zoom();
+    const bounded = Math.min(4, Math.max(0.25, next));
+    if (clientX !== undefined && clientY !== undefined && bounded !== previous) {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = bounded / previous;
+      setPan((current) => ({
+        x: current.x + (clientX - rect.left - rect.width / 2) * (1 - ratio),
+        y: current.y + (clientY - rect.top - rect.height / 2) * (1 - ratio),
+      }));
+    }
+    setZoom(bounded);
+  };
+
+  const fitCanvas = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
   return (
-    <canvas
-      ref={canvas}
-      onPointerDown={onDown}
-      onPointerMove={onMove}
-      onPointerUp={onUp}
-      onPointerCancel={onUp}
-      class="block h-auto max-w-full touch-none rounded-md bg-white shadow-sm ring-1 ring-line"
-    />
+    <div class="studio-canvas-stage">
+      <div class="studio-canvas-toolbar" role="toolbar" aria-label="Canvas controls">
+        <button
+          type="button"
+          class="studio-canvas-tool"
+          classList={{ 'studio-canvas-tool--active': panMode() }}
+          aria-pressed={panMode()}
+          aria-label="Toggle pan mode"
+          title="Pan"
+          onClick={() => setPanMode((active) => !active)}
+        >
+          Pan
+        </button>
+        <span class="studio-canvas-zoom" aria-live="polite">{Math.round(zoom() * 100)}%</span>
+        <button
+          type="button"
+          class="studio-canvas-tool studio-canvas-tool--symbol"
+          aria-label="Zoom out"
+          title="Zoom out"
+          disabled={zoom() <= 0.25}
+          onClick={() => zoomTo(zoom() / 1.2)}
+        >
+          −
+        </button>
+        <button
+          type="button"
+          class="studio-canvas-tool studio-canvas-tool--symbol"
+          aria-label="Zoom in"
+          title="Zoom in"
+          disabled={zoom() >= 4}
+          onClick={() => zoomTo(zoom() * 1.2)}
+        >
+          +
+        </button>
+        <button type="button" class="studio-canvas-tool" aria-label="Fit canvas" title="Fit canvas" onClick={fitCanvas}>
+          Fit
+        </button>
+      </div>
+      <div class="studio-canvas-viewport">
+        <canvas
+          ref={canvas}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          onWheel={(e) => {
+            e.preventDefault();
+            zoomTo(zoom() * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX, e.clientY);
+          }}
+          class="studio-canvas block h-auto max-h-full w-auto max-w-full touch-none border-2 border-ink bg-white"
+          style={{ transform: `translate(${pan().x}px, ${pan().y}px) scale(${zoom()})` }}
+        />
+      </div>
+    </div>
   );
 }

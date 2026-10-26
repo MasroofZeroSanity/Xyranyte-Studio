@@ -26,7 +26,7 @@ export default function NavigationBar(props: NavigationBarProps) {
       aria-checked={darkMode()}
       title={darkMode() ? 'Dark mode' : 'Light mode'}
       onClick={() => setDarkMode((enabled) => !enabled)}
-      class="app-navbar__theme relative flex h-8 w-16 items-center rounded-full border border-line bg-paper p-[3px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      class="app-navbar__theme relative flex h-8 w-16 items-center !rounded-full border border-line bg-paper p-[3px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       <span
         aria-hidden="true"

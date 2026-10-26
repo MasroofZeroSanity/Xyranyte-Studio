@@ -2,14 +2,25 @@ import { createSignal, Show } from 'solid-js';
 import JSZip from 'jszip';
 import { editor } from '@/store/editor';
 import { downloadBlob, renderToBlob, safeFilename } from '@/lib/export';
+import type { Anchor, Row } from '@/types';
 import { Section } from '../ui/Field';
 
-export default function ExportPanel() {
+const CHUNK_SIZE = 50;
+
+export interface ExportProgress {
+  current: number;
+  total: number;
+  phase: string;
+}
+
+export default function ExportPanel(props: {
+  onProgress: (progress: ExportProgress | null) => void;
+}) {
   const [busy, setBusy] = createSignal('');
 
-  const nameFor = (i: number) => {
-    const first = editor.anchors[0]?.column;
-    const row = editor.rows()[i];
+  const nameFor = (i: number, anchors: readonly Anchor[], rows: readonly Row[]) => {
+    const first = anchors[0]?.column;
+    const row = rows[i];
     return safeFilename(first && row ? row[first] : '', `image-${i + 1}`);
   };
 
@@ -17,33 +28,61 @@ export default function ExportPanel() {
     const img = editor.image();
     const row = editor.currentRow();
     if (!img || !row) return;
-    downloadBlob(await renderToBlob(img, editor.anchors, row), nameFor(editor.previewIndex()));
+    const anchors = editor.anchors.slice();
+    const rows = editor.rows();
+    const index = editor.previewIndex();
+
+    try {
+      setBusy('Rendering image 1 of 1');
+      props.onProgress({ current: 1, total: 1, phase: 'Rendering image 1 of 1' });
+      const blob = await renderToBlob(img, anchors, row);
+      downloadBlob(blob, nameFor(index, anchors, rows));
+    } finally {
+      setBusy('');
+      props.onProgress(null);
+    }
   };
 
   const exportAll = async () => {
     const img = editor.image();
     if (!img) return;
     const all = editor.rows();
-    const zip = new JSZip();
+    const anchors = editor.anchors.slice();
     const filenames = new Set<string>();
+    const totalChunks = Math.ceil(all.length / CHUNK_SIZE);
 
     try {
-      for (let i = 0; i < all.length; i++) {
-        setBusy(`Exporting ${i + 1} of ${all.length}`);
-        const filename = nameFor(i);
-        let uniqueFilename = filename;
-        let suffix = 2;
-        while (filenames.has(uniqueFilename)) {
-          uniqueFilename = filename.replace(/\.png$/, `-${suffix++}.png`);
-        }
-        filenames.add(uniqueFilename);
-        zip.file(uniqueFilename, await renderToBlob(img, editor.anchors, all[i]));
-      }
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const chunkStart = chunkIndex * CHUNK_SIZE;
+        const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, all.length);
+        const zip = new JSZip();
 
-      setBusy('Creating ZIP file');
-      downloadBlob(await zip.generateAsync({ type: 'blob' }), 'images.zip');
+        for (let i = chunkStart; i < chunkEnd; i++) {
+          const phase = `Rendering image ${i + 1} of ${all.length}`;
+          setBusy(phase);
+          props.onProgress({ current: i + 1, total: all.length, phase });
+
+          const filename = nameFor(i, anchors, all);
+          let uniqueFilename = filename;
+          let suffix = 2;
+          while (filenames.has(uniqueFilename)) {
+            uniqueFilename = filename.replace(/\.png$/, `-${suffix++}.png`);
+          }
+          filenames.add(uniqueFilename);
+          zip.file(uniqueFilename, await renderToBlob(img, anchors, all[i]));
+        }
+
+        const phase = `Creating ZIP ${chunkIndex + 1} of ${totalChunks}`;
+        setBusy(phase);
+        props.onProgress({ current: chunkEnd, total: all.length, phase });
+        const archiveName = totalChunks === 1
+          ? 'images.zip'
+          : `images-part-${String(chunkIndex + 1).padStart(3, '0')}.zip`;
+        downloadBlob(await zip.generateAsync({ type: 'blob' }), archiveName);
+      }
     } finally {
       setBusy('');
+      props.onProgress(null);
     }
   };
 
@@ -53,21 +92,21 @@ export default function ExportPanel() {
     <Section title="Export">
       <div class="flex gap-2">
         <button
-          class="flex-1 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium disabled:opacity-40"
+          class="flex-1 border-2 border-ink bg-white px-3 py-2 text-sm font-bold hover:bg-paper-2 disabled:opacity-40"
           disabled={!ready() || !!busy()}
           onClick={exportCurrent}
         >
           Download this row
         </button>
         <button
-          class="flex-1 rounded-md bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+          class="flex-1 border-2 border-ink bg-accent-2 px-3 py-2 text-sm font-extrabold text-ink hover:bg-white disabled:opacity-40"
           disabled={!ready() || !!busy()}
           onClick={exportAll}
         >
           Download all rows
         </button>
       </div>
-      <Show
+      {/* <Show
         when={busy()}
         fallback={
           <p class="mt-2 text-xs text-ink/60">
@@ -78,7 +117,7 @@ export default function ExportPanel() {
         }
       >
         <p class="mt-2 text-xs text-ink/70">{busy()}</p>
-      </Show>
+      </Show> */}
     </Section>
   );
 }
