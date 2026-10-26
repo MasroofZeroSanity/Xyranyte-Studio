@@ -1,4 +1,4 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal } from 'solid-js';
 import JSZip from 'jszip';
 import { editor } from '@/store/editor';
 import { downloadBlob, renderToBlob, safeFilename } from '@/lib/export';
